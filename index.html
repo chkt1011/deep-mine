@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DEEP MINE — 광산의 끝 (초고화질 리마스터)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="gameShell">
+  <canvas id="world"></canvas>
+  <div class="scanlines"></div>
+
+  <!-- 상단 바 -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="pickaxe">⛏</span>
+      <div><b>DEEP MINE</b><small>THE LAST FRONTIER</small></div>
+    </div>
+    <div class="top-stats">
+      <div class="stat"><small>DEPTH</small><b id="depthLabel">01 F</b></div>
+      <div class="stat"><small>GOLD</small><b id="goldLabel">0 G</b></div>
+      <div class="stat"><small>PLAYER LEVEL</small><b id="levelLabel">LV. 1</b></div>
+    </div>
+    <div class="top-user-box">
+      <span id="userAccountDisplay" class="user-chip">로그인 필요</span>
+      <button class="auth-btn" id="logoutBtn" style="display:none;">로그아웃</button>
+      <button class="sound-btn" id="soundBtn" title="효과음 켜기/끄기">♫</button>
+    </div>
+  </header>
+
+  <!-- 좌측 상태 패널 -->
+  <aside class="left-panel panel">
+    <div class="panel-heading"><span>✦</span> MINER STATUS</div>
+    <div class="player-card">
+      <div class="avatar" id="playerAvatarDisplay">⛏</div>
+      <div>
+        <b id="playerName">초보 광부</b>
+        <small id="jobBadge" class="job-badge">견습 광부</small>
+        <small id="toolName" style="color:var(--gold);margin-top:2px;">나무 곡괭이 (+0)</small>
+      </div>
+    </div>
+    <div class="bar-label"><span>HP</span><b id="hpText">100 / 100</b></div>
+    <div class="bar hp"><i id="hpBar"></i></div>
+    <div class="bar-label"><span>EXP</span><b id="expText">0 / 30</b></div>
+    <div class="bar exp"><i id="expBar"></i></div>
+    <div class="stat-grid">
+      <div><small>MINING POWER</small><b id="powerLabel">10</b></div>
+      <div><small>AUTO MINERS</small><b id="minerCountLabel">0명</b></div>
+    </div>
+
+    <!-- 펫 보물 선물 스킬 타이머 바 -->
+    <div class="pet-status-box">
+      <div class="pet-header">
+        <span id="petNameLabel">🧚‍♂️ 요정 펫 (동행 중)</span>
+        <b id="petStateBadge" class="badge-on">ACTIVE</b>
+      </div>
+      <div class="bar-label" style="margin-top:6px;">
+        <span>🎁 보물 탐사 스킬</span>
+        <b id="petTimerText">10초</b>
+      </div>
+      <div class="bar pet-bar"><i id="petProgressBar"></i></div>
+    </div>
+
+    <!-- 자동 판매 타이머 박스 -->
+    <div class="autosell-status-box">
+      <div class="autosell-header">
+        <span>💰 자동 판매 드론</span>
+        <b id="autoSellStateBadge" class="badge-off">OFF</b>
+      </div>
+      <div class="bar-label" style="margin-top:6px;">
+        <span>다음 정산</span>
+        <b id="autoSellTimerText">5초</b>
+      </div>
+      <div class="bar autosell-bar"><i id="autoSellProgressBar"></i></div>
+    </div>
+
+    <div class="tip-box">
+      <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 이동 · <kbd>SHIFT</kbd> 달리기<br>
+      🗺️ 15개 심연 맵 & 100단계 초월 곡괭이!
+    </div>
+  </aside>
+
+  <!-- 우측 로그 패널 -->
+  <aside class="right-panel panel">
+    <div class="panel-heading"><span>▤</span> MINING LOG</div>
+    <div id="logList" class="log-list"><p class="muted">광산에 오신 것을 환영합니다.</p></div>
+    <div class="panel-heading lower"><span>◆</span> DISCOVERY</div>
+    <div class="discovery">
+      <b id="discoverName">아직 발견한 광물 없음</b>
+      <small id="discoverText">광석을 채굴해 보세요.</small>
+    </div>
+  </aside>
+
+  <!-- 하단 네비게이션 -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="inventory">▦ <span>인벤토리</span></button>
+    <button class="nav-btn" data-tab="job">📜 <span>전직소</span></button>
+    <button class="nav-btn" data-tab="forge">⚒ <span>강화 작업대</span></button>
+    <button class="nav-btn" data-tab="shop">🛒 <span>광부 상점</span></button>
+    <button class="nav-btn" data-tab="automine">⚙️ <span>자동 광질장</span></button>
+    <button class="nav-btn" data-tab="map">⌖ <span>광산 지도</span></button>
+    <button class="nav-btn" data-tab="codex">✧ <span>광물 도감</span></button>
+  </nav>
+
+  <!-- 게임 모달 -->
+  <section class="modal hidden" id="gameModal">
+    <div class="modal-card">
+      <button class="close" id="closeModal">×</button>
+      <div id="modalContent"></div>
+    </div>
+  </section>
+
+  <!-- 로그인/회원가입 모달 -->
+  <section class="modal" id="loginModal">
+    <div class="modal-card auth-card">
+      <h2 class="modal-title">DEEP MINE LOGIN</h2>
+      <div class="modal-sub">Google 계정 또는 이메일 계정으로 로그인하세요.</div>
+      
+      <button type="button" class="action-btn gold full-btn" id="googleSignInBtn">Google 계정으로 로그인</button>
+
+      <div class="auth-divider"><span>또는 일반 계정</span></div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tabLoginBtn">로그인</button>
+        <button class="auth-tab" id="tabRegisterBtn">새 계정 생성</button>
+      </div>
+
+      <form id="loginForm" class="auth-form">
+        <div class="form-group">
+          <label>이메일</label>
+          <input type="email" id="loginUsername" placeholder="이메일 입력" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label>비밀번호</label>
+          <input type="password" id="loginPassword" placeholder="비밀번호 입력" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="action-btn gold full-btn">광산 입장하기</button>
+      </form>
+
+      <form id="registerForm" class="auth-form hidden">
+        <div class="form-group">
+          <label>이메일</label>
+          <input type="email" id="regUsername" placeholder="이메일 입력" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label>비밀번호</label>
+          <input type="password" id="regPassword" placeholder="비밀번호" required autocomplete="new-password">
+        </div>
+        <button type="submit" class="action-btn gold full-btn">계정 생성 및 시작</button>
+      </form>
+
+      <div id="authMessage" class="auth-msg"></div>
+    </div>
+  </section>
+
+  <div class="center-message hidden" id="centerMessage"></div>
+
+  <div class="mobile-controls">
+    <div class="dpad">
+      <button data-move="up">▲</button>
+      <div>
+        <button data-move="left">◀</button>
+        <button data-move="down">▼</button>
+        <button data-move="right">▶</button>
+      </div>
+    </div>
+    <button class="mobile-mine" id="mobileMine">⛏</button>
+  </div>
+  
+  <footer class="footer-hint">
+    <span class="dot"></span> AUTOSAVE ACTIVE <span>·</span> 고퀄리티 도트 아트 리마스터 버전
+  </footer>
+</div>
+<script src="firebase-config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
